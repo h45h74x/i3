@@ -19,6 +19,7 @@ extern xcb_visualtype_t *visual_type;
 
 /* Forward declarations */
 static void draw_util_set_source_color(surface_t *surface, color_t color);
+static void draw_util_set_source_pattern(surface_t *surface, cairo_pattern_t* pattern);
 
 #define RETURN_UNLESS_SURFACE_INITIALIZED(surface)                               \
     do {                                                                         \
@@ -121,6 +122,11 @@ static void draw_util_set_source_color(surface_t *surface, color_t color) {
 
     cairo_set_source_rgba(surface->cr, color.red, color.green, color.blue, color.alpha);
 }
+static void draw_util_set_source_pattern(surface_t *surface, cairo_pattern_t* pattern) {
+    RETURN_UNLESS_SURFACE_INITIALIZED(surface);
+
+    cairo_set_source(surface->cr, pattern);
+}
 
 /*
  * Draw the given text using libi3.
@@ -174,13 +180,26 @@ void draw_util_image(cairo_surface_t *image, surface_t *surface, int x, int y, i
 void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, double w, double h) {
     RETURN_UNLESS_SURFACE_INITIALIZED(surface);
 
+    cairo_pattern_t *pat1;  
+    pat1 = cairo_pattern_create_linear(0.0, 0.0,  350.0, 350.0);gdouble j;
+    gint count = 1;
+    for ( j = 0.1; j < 1; j += 0.1 ) {
+        if (( count % 2 ))  {
+            cairo_pattern_add_color_stop_rgb(pat1, j, 0, 0, 0);
+        } else { 
+            cairo_pattern_add_color_stop_rgb(pat1, j, 1, 0, 0);
+        }
+    count++;
+    }
+
     cairo_save(surface->cr);
 
     /* Using the SOURCE operator will copy both color and alpha information directly
      * onto the surface rather than blending it. This is a bit more efficient and
      * allows better color control for the user when using opacity. */
     cairo_set_operator(surface->cr, CAIRO_OPERATOR_SOURCE);
-    draw_util_set_source_color(surface, color);
+    //draw_util_set_source_color(surface, color);
+    draw_util_set_source_pattern(surface, pat1);
 
     cairo_rectangle(surface->cr, x, y, w, h);
     cairo_fill(surface->cr);
@@ -190,6 +209,8 @@ void draw_util_rectangle(surface_t *surface, color_t color, double x, double y, 
     CAIRO_SURFACE_FLUSH(surface->surface);
 
     cairo_restore(surface->cr);
+
+    cairo_pattern_destroy(pat1);
 }
 
 /*
